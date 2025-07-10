@@ -1,34 +1,26 @@
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 
-export interface WebsiteGenerationData {
-  websiteId: string;
-  industry: string;
-  company: any;
-  products: any[];
-  theme: any;
-  content: any[];
-  pages: any[];
-}
-
 export class WebsiteGenerator {
-  private outputDir: string;
-
-  constructor(outputDir: string = 'generated-websites') {
+  constructor(outputDir = 'generated-websites') {
     this.outputDir = outputDir;
     this.ensureOutputDir();
   }
 
-  private ensureOutputDir() {
+  ensureOutputDir() {
     if (!fs.existsSync(this.outputDir)) {
       fs.mkdirSync(this.outputDir, { recursive: true });
     }
   }
 
-  async generateWebsite(websiteId: string): Promise<string> {
+  async generateWebsite(websiteId) {
     try {
       // Fetch complete website data
       const website = await prisma.website.findUnique({
@@ -72,7 +64,7 @@ export class WebsiteGenerator {
     }
   }
 
-  private async generateHTML(website: any, outputDir: string) {
+  async generateHTML(website, outputDir) {
     const htmlTemplate = this.getHTMLTemplate(website);
     
     // Generate index.html
@@ -82,7 +74,7 @@ export class WebsiteGenerator {
     );
 
     // Generate additional pages
-    website.pages?.forEach((page: any) => {
+    website.pages?.forEach((page) => {
       const pageHTML = this.getPageTemplate(website, page);
       fs.writeFileSync(
         path.join(outputDir, `${page.slug}.html`),
@@ -91,7 +83,7 @@ export class WebsiteGenerator {
     });
   }
 
-  private async generateCSS(website: any, outputDir: string) {
+  async generateCSS(website, outputDir) {
     const cssContent = this.getCSSTemplate(website);
     
     fs.writeFileSync(
@@ -100,7 +92,7 @@ export class WebsiteGenerator {
     );
   }
 
-  private async generateJS(website: any, outputDir: string) {
+  async generateJS(website, outputDir) {
     const jsContent = this.getJSTemplate(website);
     
     fs.writeFileSync(
@@ -109,7 +101,7 @@ export class WebsiteGenerator {
     );
   }
 
-  private async copyAssets(outputDir: string) {
+  async copyAssets(outputDir) {
     // Copy common assets like fonts, icons, etc.
     const assetsDir = path.join(outputDir, 'assets');
     if (!fs.existsSync(assetsDir)) {
@@ -117,7 +109,7 @@ export class WebsiteGenerator {
     }
   }
 
-  private getHTMLTemplate(website: any): string {
+  getHTMLTemplate(website) {
     const { company, theme, content, products } = website;
     
     return `<!DOCTYPE html>
@@ -203,8 +195,8 @@ export class WebsiteGenerator {
 </html>`;
   }
 
-  private getPageTemplate(website: any, page: any): string {
-    const { company, theme } = website;
+  getPageTemplate(website, page) {
+    const { company } = website;
     
     return `<!DOCTYPE html>
 <html lang="en">
@@ -251,7 +243,7 @@ export class WebsiteGenerator {
 </html>`;
   }
 
-  private getCSSTemplate(website: any): string {
+  getCSSTemplate(website) {
     const { theme } = website;
     
     return `/* Reset and Base Styles */
@@ -463,7 +455,7 @@ section h2 {
 }`;
   }
 
-  private getJSTemplate(website: any): string {
+  getJSTemplate(website) {
     return `// Website functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Smooth scrolling for navigation links
@@ -524,11 +516,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });`;
   }
 
-  private getContentByType(content: any[], type: string) {
+  getContentByType(content, type) {
     return content?.find(c => c.type === type);
   }
 
-  private generateServicesHTML(website: any): string {
+  generateServicesHTML(website) {
     // Generate services based on industry
     const services = this.getIndustryServices(website.industry);
     
@@ -540,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
     `).join('');
   }
 
-  private generateProductsHTML(products: any[]): string {
+  generateProductsHTML(products) {
     return products.map(product => `
       <div class="product-card">
         ${product.image ? `<img src="${product.image}" alt="${product.name}">` : ''}
@@ -554,37 +546,8 @@ document.addEventListener('DOMContentLoaded', function() {
     `).join('');
   }
 
-  private getIndustryServices(industry: string): any[] {
-    const serviceMap: { [key: string]: any[] } = {
-      pharmacy: [
-        { name: 'Prescription Services', description: 'Professional prescription filling and consultation' },
-        { name: 'Health Consultations', description: 'Expert health advice and medication guidance' },
-        { name: 'Home Delivery', description: 'Convenient delivery of medications to your door' }
-      ],
-      cosmetics: [
-        { name: 'Beauty Consultation', description: 'Personalized beauty advice and product recommendations' },
-        { name: 'Makeup Services', description: 'Professional makeup application for special events' },
-        { name: 'Skincare Analysis', description: 'Comprehensive skin analysis and treatment plans' }
-      ],
-      restaurant: [
-        { name: 'Dine-In Experience', description: 'Comfortable dining with exceptional service' },
-        { name: 'Takeout & Delivery', description: 'Quick and convenient food ordering' },
-        { name: 'Catering Services', description: 'Professional catering for events and parties' }
-      ],
-      default: [
-        { name: 'Professional Service', description: 'High-quality service tailored to your needs' },
-        { name: 'Expert Consultation', description: 'Professional advice and guidance' },
-        { name: 'Customer Support', description: '24/7 customer support and assistance' }
-      ]
-    };
-
-    return serviceMap[industry] || serviceMap.default;
-  }
-}`;
-  }
-
-  private getIndustryServices(industry: string): any[] {
-    const serviceMap: { [key: string]: any[] } = {
+  getIndustryServices(industry) {
+    const serviceMap = {
       pharmacy: [
         { name: 'Prescription Services', description: 'Professional prescription filling and consultation' },
         { name: 'Health Consultations', description: 'Expert health advice and medication guidance' },
