@@ -1,0 +1,173 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(CLIENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  websites Website[]
+
+  @@map("users")
+}
+
+model Website {
+  id          String        @id @default(cuid())
+  name        String
+  domain      String?       @unique
+  industry    String
+  status      WebsiteStatus @default(DRAFT)
+  isPublished Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   CompanyDetails?
+  products  Product[]
+  theme     ColorTheme?
+  content   ContentSection[]
+  pages     Page[]
+
+  @@map("websites")
+}
+
+model CompanyDetails {
+  id          String  @id @default(cuid())
+  name        String
+  tagline     String?
+  description String?
+  address     String?
+  phone       String?
+  email       String?
+  website     String?
+  logo        String?
+
+  // Relations
+  websiteId String  @unique
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@map("company_details")
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  sku         String
+  category    String?
+  image       String?
+  inStock     Boolean @default(true)
+  featured    Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  websiteId String
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@map("products")
+}
+
+model ColorTheme {
+  id         String @id @default(cuid())
+  name       String
+  primary    String
+  secondary  String
+  accent     String
+  background String
+  text       String
+  preview    String
+
+  // Relations
+  websiteId String  @unique
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@map("color_themes")
+}
+
+model ContentSection {
+  id      String      @id @default(cuid())
+  type    SectionType
+  title   String?
+  content String?
+  order   Int         @default(0)
+
+  // Relations
+  websiteId String
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@map("content_sections")
+}
+
+model Page {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String
+  title     String?
+  content   String?
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  websiteId String
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@unique([websiteId, slug])
+  @@map("pages")
+}
+
+model IndustryTemplate {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  pages       String[]
+  sections    String[]
+  features    String[]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("industry_templates")
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum WebsiteStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SectionType {
+  HERO
+  ABOUT
+  SERVICES
+  PRODUCTS
+  CONTACT
+  FOOTER
+  CUSTOM
+}
