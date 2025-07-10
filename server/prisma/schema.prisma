@@ -54,7 +54,7 @@ model CompanyDetails {
   address     String?
   phone       String?
   email       String?
-  website     String?
+  // website     String?
   logo        String?
 
   // Relations
