@@ -42,6 +42,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/generated', express.static(path.join(__dirname, 'generated-websites')));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

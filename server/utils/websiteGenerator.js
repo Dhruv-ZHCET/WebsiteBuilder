@@ -558,10 +558,10 @@ document.addEventListener('DOMContentLoaded', function() {
         { name: 'Makeup Services', description: 'Professional makeup application for special events' },
         { name: 'Skincare Analysis', description: 'Comprehensive skin analysis and treatment plans' }
       ],
-      restaurant: [
-        { name: 'Dine-In Experience', description: 'Comfortable dining with exceptional service' },
-        { name: 'Takeout & Delivery', description: 'Quick and convenient food ordering' },
-        { name: 'Catering Services', description: 'Professional catering for events and parties' }
+      education: [
+        { name: 'Course Catalog', description: 'Comprehensive range of academic and professional courses' },
+        { name: 'Online Learning', description: 'Flexible online classes and digital learning resources' },
+        { name: 'Student Support', description: 'Dedicated support services and academic guidance' }
       ],
       default: [
         { name: 'Professional Service', description: 'High-quality service tailored to your needs' },

@@ -20,33 +20,6 @@ export const industryTemplates: IndustryTemplate[] = [
     features: ['Product Catalog', 'Beauty Blog', 'Wishlist', 'Reviews & Ratings']
   },
   {
-    id: 'restaurant',
-    name: 'Restaurant',
-    description: 'Restaurant website with menu, reservations, and online ordering',
-    icon: 'UtensilsCrossed',
-    pages: ['Home', 'Menu', 'Reservations', 'About', 'Contact'],
-    sections: ['Hero', 'Menu Highlights', 'Reservations', 'About', 'Location'],
-    features: ['Digital Menu', 'Table Reservations', 'Online Ordering', 'Event Booking']
-  },
-  {
-    id: 'clothing',
-    name: 'Clothing Store',
-    description: 'Fashion e-commerce website with collections and shopping cart',
-    icon: 'Shirt',
-    pages: ['Home', 'Collections', 'Sale', 'About', 'Contact'],
-    sections: ['Hero', 'New Arrivals', 'Collections', 'Sale Items', 'Contact'],
-    features: ['Product Catalog', 'Shopping Cart', 'Size Guide', 'Style Blog']
-  },
-  {
-    id: 'fitness',
-    name: 'Fitness Center',
-    description: 'Fitness center website with class schedules and membership plans',
-    icon: 'Dumbbell',
-    pages: ['Home', 'Classes', 'Membership', 'Trainers', 'Contact'],
-    sections: ['Hero', 'Classes', 'Membership Plans', 'Trainers', 'Contact'],
-    features: ['Class Booking', 'Membership Management', 'Trainer Profiles', 'Progress Tracking']
-  },
-  {
     id: 'education',
     name: 'Education',
     description: 'Educational institution website with courses and admissions',

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import Header from './components/Header';
 import ProgressBar from './components/ProgressBar';
 import IndustrySelection from './components/steps/IndustrySelection';
@@ -8,6 +9,7 @@ import ProductManagement from './components/steps/ProductManagement';
 import ContentCustomization from './components/steps/ContentCustomization';
 import NavigationButtons from './components/NavigationButtons';
 import { WebsiteData, IndustryTemplate, ColorTheme as ColorThemeType } from './types';
+import { websiteAPI } from './utils/api';
 
 const steps = [
   'Industry',
@@ -54,6 +56,8 @@ const initialWebsiteData: WebsiteData = {
 function App() {
   const [currentStep, setCurrentStep] = useState(0);
   const [websiteData, setWebsiteData] = useState<WebsiteData>(initialWebsiteData);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedWebsite, setGeneratedWebsite] = useState<any>(null);
 
   const handleIndustrySelect = (industry: IndustryTemplate) => {
     setWebsiteData(prev => ({
@@ -96,6 +100,10 @@ function App() {
     setWebsiteData(prev => ({ ...prev, content }));
   };
 
+  const handlePreviewTemplate = (templateId: string) => {
+    console.log('Previewing template:', templateId);
+  };
+
   const canProceed = () => {
     switch (currentStep) {
       case 0:
@@ -117,9 +125,42 @@ function App() {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      // Generate website
-      console.log('Generating website with data:', websiteData);
-      alert('Website generation started! This would normally trigger the backend process.');
+      handleGenerateWebsite();
+    }
+  };
+
+  const handleGenerateWebsite = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await websiteAPI.generateWebsite(websiteData);
+      setGeneratedWebsite(response.data);
+      console.log('Website generated successfully:', response.data);
+    } catch (error) {
+      console.error('Error generating website:', error);
+      alert('Error generating website. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDownloadWebsite = async () => {
+    if (!generatedWebsite?.websiteId) return;
+    
+    try {
+      const response = await websiteAPI.downloadWebsite(generatedWebsite.websiteId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${websiteData.company.name || 'website'}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading website:', error);
+      alert('Error downloading website. Please try again.');
     }
   };
 
@@ -146,6 +187,7 @@ function App() {
           <IndustrySelection
             selectedIndustry={websiteData.industry}
             onSelect={handleIndustrySelect}
+            onPreview={handlePreviewTemplate}
           />
         );
       case 1:
@@ -178,17 +220,21 @@ function App() {
         );
       case 5:
         return (
-          <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto px-4 py-8">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Review Your Website
+                {generatedWebsite ? 'Website Generated Successfully!' : 'Review Your Website'}
               </h2>
               <p className="text-lg text-gray-600">
-                Review all the information before generating your website
+                {generatedWebsite 
+                  ? 'Your website has been generated. Preview it below or download the code.'
+                  : 'Review all the information before generating your website'
+                }
               </p>
             </div>
             
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+            {!generatedWebsite ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
               <h3 className="text-xl font-semibold mb-4">Website Summary</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -209,6 +255,47 @@ function App() {
                 </div>
               </div>
             </div>
+            ) : (
+              <div className="space-y-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-semibold">Website Preview</h3>
+                    <button
+                      onClick={handleDownloadWebsite}
+                      className="flex items-center space-x-2 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <span>Download Code</span>
+                    </button>
+                  </div>
+                  
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <iframe
+                      src={generatedWebsite.previewUrl}
+                      className="w-full h-96"
+                      title="Website Preview"
+                    />
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                  <h3 className="text-xl font-semibold mb-4">Generated Files</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900">HTML Files</h4>
+                      <p className="text-sm text-gray-600">index.html + additional pages</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900">CSS Styles</h4>
+                      <p className="text-sm text-gray-600">styles.css with your theme</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900">JavaScript</h4>
+                      <p className="text-sm text-gray-600">script.js with interactions</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       default:

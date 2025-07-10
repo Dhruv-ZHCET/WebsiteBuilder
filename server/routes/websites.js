@@ -1,9 +1,18 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { validateRequest, schemas } from '../middleware/validation.js';
+import { WebsiteGenerator } from '../utils/websiteGenerator.js';
+import archiver from 'archiver';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 const prisma = new PrismaClient();
+const websiteGenerator = new WebsiteGenerator();
 
 // Get all websites for user
 router.get('/', async (req, res, next) => {
@@ -268,6 +277,123 @@ router.post('/:id/publish', async (req, res, next) => {
       message: 'Website published successfully',
       website: publishedWebsite
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Generate website
+router.post('/generate', async (req, res, next) => {
+  try {
+    const websiteData = req.body;
+    
+    // Create website record
+    const website = await prisma.website.create({
+      data: {
+        name: websiteData.company.name || 'Generated Website',
+        industry: websiteData.industry,
+        userId: req.user.id,
+        status: 'DRAFT'
+      }
+    });
+
+    // Create company details
+    if (websiteData.company) {
+      await prisma.companyDetails.create({
+        data: {
+          ...websiteData.company,
+          websiteId: website.id
+        }
+      });
+    }
+
+    // Create color theme
+    if (websiteData.colorTheme) {
+      await prisma.colorTheme.create({
+        data: {
+          ...websiteData.colorTheme,
+          websiteId: website.id
+        }
+      });
+    }
+
+    // Create products
+    if (websiteData.products && websiteData.products.length > 0) {
+      await prisma.product.createMany({
+        data: websiteData.products.map(product => ({
+          ...product,
+          websiteId: website.id
+        }))
+      });
+    }
+
+    // Create content sections
+    if (websiteData.content) {
+      const contentSections = [
+        { type: 'HERO', title: websiteData.content.heroTitle, content: websiteData.content.heroSubtitle, order: 0 },
+        { type: 'ABOUT', title: websiteData.content.aboutTitle, content: websiteData.content.aboutContent, order: 1 },
+        { type: 'SERVICES', title: websiteData.content.servicesTitle, content: '', order: 2 },
+        { type: 'CONTACT', title: websiteData.content.contactTitle, content: '', order: 3 },
+        { type: 'FOOTER', title: '', content: websiteData.content.footerText, order: 4 }
+      ];
+
+      await prisma.contentSection.createMany({
+        data: contentSections.map(section => ({
+          ...section,
+          websiteId: website.id
+        }))
+      });
+    }
+
+    // Generate website files
+    const websiteDir = await websiteGenerator.generateWebsite(website.id);
+    
+    res.json({
+      message: 'Website generated successfully',
+      websiteId: website.id,
+      previewUrl: `http://localhost:3001/generated/${website.id}/index.html`,
+      websiteDir
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Download website as ZIP
+router.get('/:id/download', async (req, res, next) => {
+  try {
+    const websiteId = req.params.id;
+    
+    // Verify website ownership
+    const website = await prisma.website.findFirst({
+      where: {
+        id: websiteId,
+        userId: req.user.id
+      }
+    });
+
+    if (!website) {
+      return res.status(404).json({ error: 'Website not found' });
+    }
+
+    const websiteDir = path.join(__dirname, '../generated-websites', websiteId);
+    
+    if (!fs.existsSync(websiteDir)) {
+      return res.status(404).json({ error: 'Website files not found' });
+    }
+
+    // Create ZIP archive
+    const archive = archiver('zip', {
+      zlib: { level: 9 }
+    });
+
+    res.attachment(`${website.name || 'website'}.zip`);
+    archive.pipe(res);
+
+    // Add files to archive
+    archive.directory(websiteDir, false);
+    archive.finalize();
+
   } catch (error) {
     next(error);
   }
