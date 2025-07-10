@@ -101,8 +101,8 @@ const CompanyDetailsStep: React.FC<CompanyDetailsProps> = ({ companyDetails, onC
             </label>
             <input
               type="url"
-              value={companyDetails.website}
-              onChange={(e) => handleChange('website', e.target.value)}
+              value={companyDetails.websiteName}
+              onChange={(e) => handleChange('websiteName', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="https://yourcompany.com"
             />

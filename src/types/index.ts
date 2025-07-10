@@ -5,7 +5,7 @@ export interface CompanyDetails {
   address: string;
   phone: string;
   email: string;
-  website: string;
+  websiteName: string;
   logo?: string;
 }
 

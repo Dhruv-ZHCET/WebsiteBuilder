@@ -6,6 +6,8 @@ import archiver from 'archiver';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import jwt from 'jsonwebtoken';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -286,13 +288,20 @@ router.post('/:id/publish', async (req, res, next) => {
 router.post('/generate', async (req, res, next) => {
   try {
     const websiteData = req.body;
+    console.log(websiteData)
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
     
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+    console.log(userId)
     // Create website record
     const website = await prisma.website.create({
       data: {
         name: websiteData.company.name || 'Generated Website',
         industry: websiteData.industry,
-        userId: req.user.id,
+        userId,
         status: 'DRAFT'
       }
     });
