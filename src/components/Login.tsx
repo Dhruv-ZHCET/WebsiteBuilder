@@ -13,7 +13,7 @@ const Login = () => {
       const response = await authAPI.login(form);
       localStorage.setItem('authToken', response.data.token);
       alert('Login successful');
-      navigate('/builder'); // or your home page
+      navigate('/builder');
     } catch (err) {
       alert('Login failed');
       console.error(err);

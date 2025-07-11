@@ -44,6 +44,7 @@ CREATE TABLE "company_details" (
     "address" TEXT,
     "phone" TEXT,
     "email" TEXT,
+    "websiteName" TEXT,
     "logo" TEXT,
     "websiteId" TEXT NOT NULL,
 

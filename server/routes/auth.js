@@ -118,7 +118,8 @@ router.get('/me', async (req, res, next) => {
         name: true,
         email: true,
         role: true,
-        createdAt: true
+        createdAt: true,
+        websites:true
       }
     });
 

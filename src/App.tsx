@@ -1,16 +1,9 @@
-import React from 'react';
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Header from './components/Header';
-import ProgressBar from './components/ProgressBar';
-import IndustrySelection from './components/steps/IndustrySelection';
-import CompanyDetails from './components/steps/CompanyDetails';
-import ColorTheme from './components/steps/ColorTheme';
-import ProductManagement from './components/steps/ProductManagement';
-import ContentCustomization from './components/steps/ContentCustomization';
-import NavigationButtons from './components/NavigationButtons';
 import Login from './components/Login';
 import Register from './components/Register';
 import Builder from './components/Builder';
+import { Dashboard } from './components/Dashboard';
 
 function App() {
   const isAuthenticated = !!localStorage.getItem('authToken');
@@ -37,6 +30,7 @@ function App() {
           path="/builder"
           element={isAuthenticated ? <Builder /> : <Navigate to="/login" />} 
         />
+        <Route path='/dashboard' element={<Dashboard/>}/>
       </Routes>
     </Router>
   );

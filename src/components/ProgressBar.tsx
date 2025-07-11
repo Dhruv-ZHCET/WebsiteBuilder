@@ -7,7 +7,7 @@ interface ProgressBarProps {
   steps: string[];
 }
 
-const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep, totalSteps, steps }) => {
+const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep, steps }) => {
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-6">
       <div className="max-w-4xl mx-auto">
