@@ -1,7 +1,7 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { validateRequest, schemas } from '../middleware/validation.js';
-import { WebsiteGenerator } from '../utils/websiteGenerator.js';
+import { EnhancedWebsiteGenerator } from '../utils/enhancedWebsiteGenerator.js';
 import archiver from 'archiver';
 import fs from 'fs';
 import path from 'path';
@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 const prisma = new PrismaClient();
-const websiteGenerator = new WebsiteGenerator();
+const websiteGenerator = new EnhancedWebsiteGenerator();
 
 // Get all websites for user
 router.get('/', async (req, res, next) => {

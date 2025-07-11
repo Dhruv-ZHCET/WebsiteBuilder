@@ -1,4 +1,51 @@
-import { IndustryTemplate, ColorTheme } from '../types';
+import { IndustryTemplate, ColorTheme, WebsiteTemplate } from '../types';
+
+export const websiteTemplates: WebsiteTemplate[] = [
+  {
+    id: 'minimalist-clean',
+    name: 'Minimalist Clean',
+    description: 'Clean, spacious design with focus on content and subtle animations',
+    category: 'minimalist',
+    preview: '/templates/minimalist-clean.jpg',
+    features: ['Clean Typography', 'Subtle Animations', 'Spacious Layout', 'Mobile-First'],
+    sections: ['Hero', 'About', 'Services', 'Portfolio', 'Contact'],
+    colorSchemes: ['monochrome', 'soft-blues', 'warm-grays'],
+    demoUrl: '/demo/minimalist-clean'
+  },
+  {
+    id: 'bold-modern',
+    name: 'Bold & Modern',
+    description: 'Eye-catching design with vibrant colors and dynamic layouts',
+    category: 'bold',
+    preview: '/templates/bold-modern.jpg',
+    features: ['Vibrant Colors', 'Dynamic Layouts', 'Interactive Elements', 'Bold Typography'],
+    sections: ['Hero', 'Features', 'Showcase', 'Testimonials', 'Contact'],
+    colorSchemes: ['vibrant-gradients', 'neon-accents', 'bold-contrasts'],
+    demoUrl: '/demo/bold-modern'
+  },
+  {
+    id: 'corporate-professional',
+    name: 'Corporate Professional',
+    description: 'Professional and trustworthy design perfect for business websites',
+    category: 'corporate',
+    preview: '/templates/corporate-professional.jpg',
+    features: ['Professional Layout', 'Trust Elements', 'Data Visualization', 'Clean Forms'],
+    sections: ['Hero', 'Services', 'About', 'Team', 'Contact'],
+    colorSchemes: ['corporate-blues', 'professional-grays', 'trust-greens'],
+    demoUrl: '/demo/corporate-professional'
+  },
+  {
+    id: 'creative-artistic',
+    name: 'Creative & Artistic',
+    description: 'Unique and creative design with artistic elements and fluid animations',
+    category: 'creative',
+    preview: '/templates/creative-artistic.jpg',
+    features: ['Artistic Elements', 'Fluid Animations', 'Creative Layouts', 'Visual Storytelling'],
+    sections: ['Hero', 'Portfolio', 'About', 'Process', 'Contact'],
+    colorSchemes: ['artistic-palette', 'creative-gradients', 'expressive-colors'],
+    demoUrl: '/demo/creative-artistic'
+  }
+];
 
 export const industryTemplates: IndustryTemplate[] = [
   {
@@ -90,5 +137,25 @@ export const colorThemes: ColorTheme[] = [
     background: '#FEF7F7',
     text: '#1F2937',
     preview: 'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)'
+  },
+  {
+    id: 'monochrome',
+    name: 'Monochrome',
+    primary: '#000000',
+    secondary: '#374151',
+    accent: '#6B7280',
+    background: '#FFFFFF',
+    text: '#111827',
+    preview: 'linear-gradient(135deg, #000000 0%, #374151 100%)'
+  },
+  {
+    id: 'soft-blues',
+    name: 'Soft Blues',
+    primary: '#0EA5E9',
+    secondary: '#0284C7',
+    accent: '#38BDF8',
+    background: '#F0F9FF',
+    text: '#0C4A6E',
+    preview: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)'
   }
 ];

@@ -31,6 +31,26 @@ export interface ColorTheme {
   preview: string;
 }
 
+export interface VisualAssets {
+  heroBackground: string;
+  productImages: string[];
+  logo?: string;
+  testimonialImages?: string[];
+  galleryImages?: string[];
+}
+
+export interface WebsiteTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: 'minimalist' | 'bold' | 'corporate' | 'creative';
+  preview: string;
+  features: string[];
+  sections: string[];
+  colorSchemes: string[];
+  demoUrl?: string;
+}
+
 export interface IndustryTemplate {
   id: string;
   name: string;
@@ -42,10 +62,11 @@ export interface IndustryTemplate {
 }
 
 export interface WebsiteData {
-  industry: string;
+  template: WebsiteTemplate;
   company: CompanyDetails;
   products: Product[];
   colorTheme: ColorTheme;
+  visualAssets: VisualAssets;
   content: {
     heroTitle: string;
     heroSubtitle: string;
@@ -55,4 +76,17 @@ export interface WebsiteData {
     contactTitle: string;
     footerText: string;
   };
+  settings: {
+    darkModeEnabled: boolean;
+    animationsEnabled: boolean;
+    responsiveImages: boolean;
+  };
+}
+
+export interface UploadedFile {
+  id: string;
+  name: string;
+  url: string;
+  type: 'hero-background' | 'product' | 'logo' | 'testimonial' | 'gallery';
+  size: number;
 }

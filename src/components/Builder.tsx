@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "./Header";
 import ProgressBar from "./ProgressBar";
-import IndustrySelection from "./steps/IndustrySelection";
+import TemplateSelection from "./steps/TemplateSelection";
+import VisualAssets from "./steps/VisualAssets";
 import CompanyDetails from "./steps/CompanyDetails";
 import ColorTheme from "./steps/ColorTheme";
 import ProductManagement from "./steps/ProductManagement";
@@ -10,13 +11,15 @@ import ContentCustomization from "./steps/ContentCustomization";
 import NavigationButtons from "./NavigationButtons";
 import {
   WebsiteData,
-  IndustryTemplate,
+  WebsiteTemplate,
   ColorTheme as ColorThemeType,
+  VisualAssets as VisualAssetsType,
 } from "../types";
 import { websiteAPI } from "../utils/api";
 
 const steps = [
-  "Industry",
+  "Template",
+  "Visual Assets",
   "Company Details",
   "Color Theme",
   "Products",
@@ -25,7 +28,16 @@ const steps = [
 ];
 
 const initialWebsiteData: WebsiteData = {
-  industry: "",
+  template: {
+    id: "",
+    name: "",
+    description: "",
+    category: "minimalist",
+    preview: "",
+    features: [],
+    sections: [],
+    colorSchemes: []
+  },
   company: {
     name: "",
     tagline: "",
@@ -46,6 +58,13 @@ const initialWebsiteData: WebsiteData = {
     text: "",
     preview: "",
   },
+  visualAssets: {
+    heroBackground: "",
+    productImages: [],
+    logo: "",
+    testimonialImages: [],
+    galleryImages: []
+  },
   content: {
     heroTitle: "",
     heroSubtitle: "",
@@ -55,6 +74,11 @@ const initialWebsiteData: WebsiteData = {
     contactTitle: "",
     footerText: "",
   },
+  settings: {
+    darkModeEnabled: true,
+    animationsEnabled: true,
+    responsiveImages: true
+  }
 };
 
 export default function Builder() {
@@ -77,16 +101,16 @@ export default function Builder() {
     }
   }, [editWebsiteId]);
 
-  const handleIndustrySelect = (industry: IndustryTemplate) => {
+  const handleTemplateSelect = (template: WebsiteTemplate) => {
     setWebsiteData((prev) => ({
       ...prev,
-      industry: industry.id,
+      template,
       content: {
         ...prev.content,
         heroTitle: `Welcome to ${prev.company.name || "Your Business"}`,
-        heroSubtitle: `Professional ${industry.name.toLowerCase()} services you can trust`,
+        heroSubtitle: `Professional services you can trust`,
         aboutTitle: "About Us",
-        aboutContent: `We are a trusted ${industry.name.toLowerCase()} business committed to providing excellent service to our community.`,
+        aboutContent: `We are committed to providing excellent service to our community.`,
         servicesTitle: "Our Services",
         contactTitle: "Contact Us",
         footerText: `© 2024 ${
@@ -96,6 +120,9 @@ export default function Builder() {
     }));
   };
 
+  const handleVisualAssetsChange = (assets: VisualAssetsType) => {
+    setWebsiteData((prev) => ({ ...prev, visualAssets: assets }));
+  };
   const handleCompanyDetailsChange = (company: typeof websiteData.company) => {
     setWebsiteData((prev) => ({
       ...prev,
@@ -125,18 +152,21 @@ export default function Builder() {
   const canProceed = () => {
     switch (currentStep) {
       case 0:
-        return websiteData.industry !== "";
+        return websiteData.template.id !== "";
       case 1:
+        return websiteData.visualAssets.heroBackground !== "" && 
+               websiteData.visualAssets.productImages.length > 0;
+      case 2:
         return (
           websiteData.company.name &&
           websiteData.company.email &&
           websiteData.company.phone
         );
-      case 2:
-        return websiteData.colorTheme.id !== "";
       case 3:
-        return true;
+        return websiteData.colorTheme.id !== "";
       case 4:
+        return true;
+      case 5:
         return websiteData.content.heroTitle && websiteData.content.aboutTitle;
       default:
         return true;
@@ -177,6 +207,7 @@ export default function Builder() {
 
   const generatePreviewHTML = (data: WebsiteData) => {
     const { company, colorTheme, content, products, industry } = data;
+    const { company, colorTheme, content, products, template } = data;
     
     return `
 <!DOCTYPE html>
@@ -457,7 +488,7 @@ export default function Builder() {
             <div class="container">
                 <h2>${content.servicesTitle || 'Our Services'}</h2>
                 <div class="services-grid">
-                    ${getIndustryServices(industry).map(service => `
+                    ${getTemplateServices(template).map(service => `
                         <div class="service-card">
                             <h3>${service.name}</h3>
                             <p>${service.description}</p>
@@ -508,26 +539,31 @@ export default function Builder() {
 </html>`;
   };
 
-  const getIndustryServices = (industry: string) => {
+  const getTemplateServices = (template: WebsiteTemplate) => {
     const serviceMap: { [key: string]: Array<{name: string, description: string}> } = {
-      pharmacy: [
-        { name: 'Prescription Services', description: 'Professional prescription filling and consultation' },
-        { name: 'Health Consultations', description: 'Expert health advice and medication guidance' },
-        { name: 'Home Delivery', description: 'Convenient delivery of medications to your door' }
+      'minimalist-clean': [
+        { name: 'Clean Design', description: 'Minimalist approach with focus on content' },
+        { name: 'Fast Loading', description: 'Optimized for speed and performance' },
+        { name: 'Mobile First', description: 'Perfect experience on all devices' }
       ],
-      cosmetics: [
-        { name: 'Beauty Consultation', description: 'Personalized beauty advice and product recommendations' },
-        { name: 'Makeup Services', description: 'Professional makeup application for special events' },
-        { name: 'Skincare Analysis', description: 'Comprehensive skin analysis and treatment plans' }
+      'bold-modern': [
+        { name: 'Eye-catching Design', description: 'Bold visuals that capture attention' },
+        { name: 'Interactive Elements', description: 'Engaging user interactions' },
+        { name: 'Modern Layouts', description: 'Contemporary design patterns' }
       ],
-      education: [
-        { name: 'Course Catalog', description: 'Comprehensive range of academic and professional courses' },
-        { name: 'Online Learning', description: 'Flexible online classes and digital learning resources' },
-        { name: 'Student Support', description: 'Dedicated support services and academic guidance' }
+      'corporate-professional': [
+        { name: 'Professional Look', description: 'Trustworthy and business-focused design' },
+        { name: 'Data Presentation', description: 'Clear information architecture' },
+        { name: 'Corporate Standards', description: 'Meets enterprise requirements' }
+      ],
+      'creative-artistic': [
+        { name: 'Artistic Expression', description: 'Creative and unique visual elements' },
+        { name: 'Fluid Animations', description: 'Smooth and engaging transitions' },
+        { name: 'Visual Storytelling', description: 'Narrative-driven design approach' }
       ]
     };
 
-    return serviceMap[industry] || [
+    return serviceMap[template.id] || [
       { name: 'Professional Service', description: 'High-quality service tailored to your needs' },
       { name: 'Expert Consultation', description: 'Professional advice and guidance' },
       { name: 'Customer Support', description: '24/7 customer support and assistance' }
@@ -593,41 +629,47 @@ export default function Builder() {
     switch (currentStep) {
       case 0:
         return (
-          <IndustrySelection
-            selectedIndustry={websiteData.industry}
-            onSelect={handleIndustrySelect}
-            onPreview={() => {}}
+          <TemplateSelection
+            selectedTemplate={websiteData.template.id ? websiteData.template : null}
+            onSelect={handleTemplateSelect}
           />
         );
       case 1:
+        return (
+          <VisualAssets
+            visualAssets={websiteData.visualAssets}
+            onChange={handleVisualAssetsChange}
+          />
+        );
+      case 2:
         return (
           <CompanyDetails
             companyDetails={websiteData.company}
             onChange={handleCompanyDetailsChange}
           />
         );
-      case 2:
+      case 3:
         return (
           <ColorTheme
             selectedTheme={websiteData.colorTheme.id}
             onSelect={handleColorThemeSelect}
           />
         );
-      case 3:
+      case 4:
         return (
           <ProductManagement
             products={websiteData.products}
             onChange={handleProductsChange}
           />
         );
-      case 4:
+      case 5:
         return (
           <ContentCustomization
             content={websiteData.content}
             onChange={handleContentChange}
           />
         );
-      case 5:
+      case 6:
         return (
           <div className="max-w-6xl mx-auto px-4 py-8">
             <div className="text-center mb-8">
@@ -653,10 +695,10 @@ export default function Builder() {
                   <div className="space-y-4">
                     <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
                       <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
-                        <span className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs mr-2">i</span>
-                        Industry
+                        <span className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs mr-2">T</span>
+                        Template
                       </h4>
-                      <p className="text-blue-700 capitalize font-medium">{websiteData.industry}</p>
+                      <p className="text-blue-700 font-medium">{websiteData.template.name}</p>
                     </div>
                     <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
                       <h4 className="font-semibold text-green-900 mb-2 flex items-center">
@@ -667,19 +709,22 @@ export default function Builder() {
                     </div>
                   </div>
                   <div className="space-y-4">
+                    <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+                      <h4 className="font-semibold text-yellow-900 mb-2 flex items-center">
+                        <span className="w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs mr-2">A</span>
+                        Visual Assets
+                      </h4>
+                      <p className="text-yellow-700 font-medium">
+                        {websiteData.visualAssets.heroBackground ? '✓' : '✗'} Hero Background, 
+                        {websiteData.visualAssets.productImages.length} Product Images
+                      </p>
+                    </div>
                     <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
                       <h4 className="font-semibold text-purple-900 mb-2 flex items-center">
                         <span className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs mr-2">T</span>
                         Color Theme
                       </h4>
                       <p className="text-purple-700 font-medium">{websiteData.colorTheme.name}</p>
-                    </div>
-                    <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
-                      <h4 className="font-semibold text-orange-900 mb-2 flex items-center">
-                        <span className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs mr-2">P</span>
-                        Products
-                      </h4>
-                      <p className="text-orange-700 font-medium">{websiteData.products.length} products added</p>
                     </div>
                   </div>
                 </div>
