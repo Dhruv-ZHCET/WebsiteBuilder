@@ -206,7 +206,7 @@ export default function Builder() {
 
   const generatePreviewHTML = (data: WebsiteData) => {
     const { company, colorTheme, content, products, industry } = data;
-    const { company, colorTheme, content, products, template } = data;
+    // const { company, colorTheme, content, products, template } = data;
     
     return `
 <!DOCTYPE html>

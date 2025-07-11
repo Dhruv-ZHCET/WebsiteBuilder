@@ -57,14 +57,14 @@ router.post('/product-images', productImageUpload.array('productImages', 10), (r
       });
 
       return {
-        publicId: file.filename,
-        url: file.path,
+        publicId: req.file.filename,
+        url: req.file.path,
         optimizedUrl,
-        originalName: file.originalname,
-        size: file.bytes,
-        format: file.format,
-        width: file.width,
-        height: file.height
+        originalName: req.file.originalname,
+        size: req.file.bytes,
+        format: req.file.format,
+        width: req.file.width,
+        height: req.file.height
       };
     });
 
@@ -80,9 +80,12 @@ router.post('/product-images', productImageUpload.array('productImages', 10), (r
 // Upload single product image
 router.post('/product-image', productImageUpload.single('productImage'), (req, res, next) => {
   try {
+    
     if (!req.file) {
       return res.status(400).json({ error: 'No product image uploaded' });
     }
+   
+    
 
     const optimizedUrl = getOptimizedImageUrl(req.file.filename, {
       width: 500,
@@ -90,6 +93,8 @@ router.post('/product-image', productImageUpload.single('productImage'), (req, r
       crop: 'fill',
       gravity: 'center'
     });
+ 
+    console.log(optimizedUrl)
 
     res.json({
       message: 'Product image uploaded successfully',
@@ -116,12 +121,14 @@ router.post('/logo', logoUpload.single('logo'), (req, res, next) => {
       return res.status(400).json({ error: 'No logo uploaded' });
     }
 
+
     const optimizedUrl = getOptimizedImageUrl(req.file.filename, {
       width: 300,
       height: 300,
       crop: 'fit',
       background: 'transparent'
     });
+
 
     res.json({
       message: 'Logo uploaded successfully',
@@ -133,7 +140,7 @@ router.post('/logo', logoUpload.single('logo'), (req, res, next) => {
         size: req.file.bytes,
         format: req.file.format,
         width: req.file.width,
-        height: file.height
+        height: req.file.height
       }
     });
   } catch (error) {
