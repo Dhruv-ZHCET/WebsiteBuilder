@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Product, CloudinaryImage } from '../../types';
-import { Plus, Edit2, Trash2, Package, DollarSign, Hash, Tag, Upload, X, Eye, Loader } from 'lucide-react';
+import { Plus, Edit2, Trash2, Package, DollarSign, Hash, Tag, Upload, X, Eye, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 import { uploadAPI } from '../../utils/api';
 
 interface ProductManagementProps {
@@ -13,6 +13,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
   const [showAddForm, setShowAddForm] = useState(false);
   const [uploadingImages, setUploadingImages] = useState<string[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string[]>([]);
 
   const emptyProduct: Product = {
     id: '',
@@ -25,7 +26,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
     inStock: true
   };
 
-  const handleImageUpload = async (productId: string, files: FileList) => {
+  const handleImageUpload = async (productId: string, files: FileList, formData?: Product, setFormData?: (data: Product) => void) => {
     if (!files.length) return;
 
     setUploadingImages(prev => [...prev, productId]);
@@ -36,8 +37,19 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
       
       const newImages: CloudinaryImage[] = responses.map(response => response.data.image);
       
-      // Update the product with new images
-      if (editingProduct && editingProduct.id === productId) {
+      // Show success feedback
+      setUploadSuccess(prev => [...prev, productId]);
+      setTimeout(() => {
+        setUploadSuccess(prev => prev.filter(id => id !== productId));
+      }, 3000);
+      
+      // Update the form data if we're in editing mode
+      if (formData && setFormData) {
+        setFormData({
+          ...formData,
+          images: [...formData.images, ...newImages]
+        });
+      } else if (editingProduct && editingProduct.id === productId) {
         setEditingProduct(prev => prev ? {
           ...prev,
           images: [...prev.images, ...newImages]
@@ -59,8 +71,11 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
     }
   };
 
-  const handleRemoveImage = (productId: string, imageIndex: number) => {
-    if (editingProduct && editingProduct.id === productId) {
+  const handleRemoveImage = (productId: string, imageIndex: number, formData?: Product, setFormData?: (data: Product) => void) => {
+    if (formData && setFormData) {
+      const updatedImages = formData.images.filter((_, index) => index !== imageIndex);
+      setFormData({ ...formData, images: updatedImages });
+    } else if (editingProduct && editingProduct.id === productId) {
       const updatedImages = editingProduct.images.filter((_, index) => index !== imageIndex);
       setEditingProduct(prev => prev ? { ...prev, images: updatedImages } : null);
     } else {
@@ -94,38 +109,65 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
     }
   };
 
-  const ProductImageUpload = ({ productId, images, onImageUpload, onRemoveImage }: {
+  const ProductImageUpload = ({ 
+    productId, 
+    images, 
+    onImageUpload, 
+    onRemoveImage,
+    formData,
+    setFormData 
+  }: {
     productId: string;
     images: CloudinaryImage[];
     onImageUpload: (files: FileList) => void;
     onRemoveImage: (index: number) => void;
+    formData?: Product;
+    setFormData?: (data: Product) => void;
   }) => {
     const isUploading = uploadingImages.includes(productId);
+    const hasUploadSuccess = uploadSuccess.includes(productId);
 
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <label className="block text-sm font-medium text-gray-700">
-            Product Images *
+            Product Images
           </label>
-          <span className="text-xs text-gray-500">
-            {images.length}/5 images
-          </span>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-gray-500">
+              {images.length}/5 images
+            </span>
+            {hasUploadSuccess && (
+              <div className="flex items-center text-green-600">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                <span className="text-xs">Uploaded!</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Upload Zone */}
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-indigo-400 hover:bg-gray-50 transition-all duration-200 relative">
+        <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-all duration-200 relative ${
+          isUploading 
+            ? 'border-indigo-400 bg-indigo-50' 
+            : hasUploadSuccess
+            ? 'border-green-400 bg-green-50'
+            : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
+        }`}>
           {isUploading ? (
             <div className="space-y-2">
               <Loader className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
-              <p className="text-sm text-gray-600">Uploading to Cloudinary...</p>
+              <p className="text-sm text-indigo-600 font-medium">Uploading to Cloudinary...</p>
+              <p className="text-xs text-indigo-500">Please wait, don't refresh the page</p>
             </div>
           ) : (
             <div className="space-y-2">
-              <Upload className="w-8 h-8 text-gray-400 mx-auto" />
+              <div className={`w-8 h-8 mx-auto ${hasUploadSuccess ? 'text-green-500' : 'text-gray-400'}`}>
+                {hasUploadSuccess ? <CheckCircle className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
+              </div>
               <div>
-                <p className="text-sm text-gray-600">
-                  Drop images here or click to browse
+                <p className={`text-sm ${hasUploadSuccess ? 'text-green-600 font-medium' : 'text-gray-600'}`}>
+                  {hasUploadSuccess ? 'Upload successful! Add more images or continue' : 'Drop images here or click to browse'}
                 </p>
                 <p className="text-xs text-gray-400">
                   PNG, JPG up to 5MB each (max 5 images)
@@ -137,7 +179,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
                 multiple
                 onChange={(e) => e.target.files && onImageUpload(e.target.files)}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={images.length >= 5}
+                disabled={images.length >= 5 || isUploading}
               />
             </div>
           )}
@@ -148,36 +190,53 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {images.map((image, index) => (
               <div key={index} className="relative group">
-                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200">
                   <img
                     src={image.optimizedUrl || image.url}
                     alt={`Product image ${index + 1}`}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to regular URL if optimized URL fails
+                      const target = e.target as HTMLImageElement;
+                      if (target.src !== image.url) {
+                        target.src = image.url;
+                      }
+                    }}
                   />
                 </div>
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 flex space-x-2">
                     <button
-                      onClick={() => setPreviewImage(image.url)}
-                      className="p-2 bg-white rounded-full text-gray-700 hover:text-indigo-600 transition-colors"
+                      type="button"
+                      onClick={() => setPreviewImage(image.optimizedUrl || image.url)}
+                      className="p-2 bg-white rounded-full text-gray-700 hover:text-indigo-600 transition-colors shadow-lg"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => onRemoveImage(index)}
-                      className="p-2 bg-white rounded-full text-gray-700 hover:text-red-600 transition-colors"
+                      className="p-2 bg-white rounded-full text-gray-700 hover:text-red-600 transition-colors shadow-lg"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
                 {index === 0 && (
-                  <div className="absolute top-2 left-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded">
+                  <div className="absolute top-2 left-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded shadow-lg">
                     Primary
                   </div>
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {images.length === 0 && !isUploading && (
+          <div className="text-center py-4">
+            <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+            <p className="text-sm text-amber-600 font-medium">No images uploaded yet</p>
+            <p className="text-xs text-gray-500">Upload at least one product image</p>
           </div>
         )}
       </div>
@@ -190,30 +249,49 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
     onCancel: () => void;
   }) => {
     const [formData, setFormData] = useState(product);
+    const [errors, setErrors] = useState<{[key: string]: string}>({});
 
     const handleChange = (field: keyof Product, value: any) => {
       setFormData({ ...formData, [field]: value });
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors(prev => ({ ...prev, [field]: '' }));
+      }
+    };
+
+    const validateForm = () => {
+      const newErrors: {[key: string]: string} = {};
+      
+      if (!formData.name.trim()) {
+        newErrors.name = 'Product name is required';
+      }
+      if (!formData.sku.trim()) {
+        newErrors.sku = 'SKU is required';
+      }
+      if (formData.price <= 0) {
+        newErrors.price = 'Price must be greater than 0';
+      }
+      
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      if (!formData.name.trim()) {
-        alert('Please enter a product name');
+      
+      if (!validateForm()) {
         return;
       }
-      if (!formData.sku.trim()) {
-        alert('Please enter a product SKU');
-        return;
-      }
-      if (formData.price <= 0) {
-        alert('Please enter a valid price');
-        return;
-      }
-      if (!formData.images.length) {
-        alert('Please upload at least one product image');
-        return;
-      }
+      
       onSave(formData);
+    };
+
+    const handleImageUploadWrapper = (files: FileList) => {
+      handleImageUpload(formData.id || 'new', files, formData, setFormData);
+    };
+
+    const handleRemoveImageWrapper = (index: number) => {
+      handleRemoveImage(formData.id || 'new', index, formData, setFormData);
     };
 
     return (
@@ -233,10 +311,12 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  errors.name ? 'border-red-300' : 'border-gray-300'
+                }`}
                 placeholder="Enter product name"
-                required
               />
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
 
             <div>
@@ -248,10 +328,12 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
                 type="text"
                 value={formData.sku}
                 onChange={(e) => handleChange('sku', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  errors.sku ? 'border-red-300' : 'border-gray-300'
+                }`}
                 placeholder="Product SKU"
-                required
               />
+              {errors.sku && <p className="text-red-500 text-xs mt-1">{errors.sku}</p>}
             </div>
 
             <div>
@@ -263,12 +345,14 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
                 type="number"
                 value={formData.price}
                 onChange={(e) => handleChange('price', parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  errors.price ? 'border-red-300' : 'border-gray-300'
+                }`}
                 placeholder="0.00"
                 step="0.01"
                 min="0"
-                required
               />
+              {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
             </div>
 
             <div>
@@ -303,8 +387,10 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
           <ProductImageUpload
             productId={formData.id || 'new'}
             images={formData.images}
-            onImageUpload={(files) => handleImageUpload(formData.id || 'new', files)}
-            onRemoveImage={(index) => handleRemoveImage(formData.id || 'new', index)}
+            onImageUpload={handleImageUploadWrapper}
+            onRemoveImage={handleRemoveImageWrapper}
+            formData={formData}
+            setFormData={setFormData}
           />
 
           <div>
@@ -330,9 +416,10 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            disabled={uploadingImages.length > 0}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {product.id ? 'Update Product' : 'Add Product'}
+            {uploadingImages.length > 0 ? 'Uploading...' : (product.id ? 'Update Product' : 'Add Product')}
           </button>
         </div>
       </form>
@@ -401,6 +488,13 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ products, onChang
                     src={product.images[0].optimizedUrl || product.images[0].url}
                     alt={product.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to regular URL if optimized URL fails
+                      const target = e.target as HTMLImageElement;
+                      if (target.src !== product.images[0].url) {
+                        target.src = product.images[0].url;
+                      }
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
