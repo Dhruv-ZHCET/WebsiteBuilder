@@ -60,7 +60,6 @@ const initialWebsiteData: WebsiteData = {
   },
   visualAssets: {
     heroBackground: "",
-    productImages: [],
     logo: "",
     testimonialImages: [],
     galleryImages: []
@@ -154,8 +153,7 @@ export default function Builder() {
       case 0:
         return websiteData.template.id !== "";
       case 1:
-        return websiteData.visualAssets.heroBackground !== "" && 
-               websiteData.visualAssets.productImages.length > 0;
+        return websiteData.visualAssets.heroBackground !== "";
       case 2:
         return (
           websiteData.company.name &&
@@ -165,7 +163,8 @@ export default function Builder() {
       case 3:
         return websiteData.colorTheme.id !== "";
       case 4:
-        return true;
+        return websiteData.products.length > 0 && 
+               websiteData.products.every(product => product.images.length > 0);
       case 5:
         return websiteData.content.heroTitle && websiteData.content.aboutTitle;
       default:

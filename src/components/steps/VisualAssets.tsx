@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { VisualAssets, UploadedFile } from '../../types';
-import { Upload, X, Image, CheckCircle, AlertCircle, Eye } from 'lucide-react';
+import { VisualAssets, CloudinaryImage } from '../../types';
+import { Upload, X, Image, CheckCircle, AlertCircle, Eye, Loader } from 'lucide-react';
+import { uploadAPI } from '../../utils/api';
 
 interface VisualAssetsProps {
   visualAssets: VisualAssets;
@@ -11,55 +12,68 @@ const VisualAssetsStep: React.FC<VisualAssetsProps> = ({ visualAssets, onChange 
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileUpload = useCallback(async (files: FileList, type: keyof VisualAssets) => {
+  const handleHeroImageUpload = useCallback(async (files: FileList) => {
     const file = files[0];
     if (!file || !file.type.startsWith('image/')) {
       alert('Please upload only image files');
       return;
     }
 
-    // Simulate upload progress
-    const uploadId = `${type}-${Date.now()}`;
-    setUploadProgress(prev => ({ ...prev, [uploadId]: 0 }));
-
-    // Create a URL for the uploaded file (in real app, this would be uploaded to server)
-    const url = URL.createObjectURL(file);
-
-    // Simulate upload progress
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      setUploadProgress(prev => ({ ...prev, [uploadId]: i }));
-    }
-
-    // Update visual assets
-    if (type === 'heroBackground') {
-      onChange({ ...visualAssets, heroBackground: url });
-    } else if (type === 'productImages') {
+    setIsUploading(true);
+    try {
+      const response = await uploadAPI.uploadHeroImage(file);
+      const imageData = response.data.image;
+      
       onChange({ 
         ...visualAssets, 
-        productImages: [...visualAssets.productImages, url] 
+        heroBackground: imageData.optimizedUrl 
       });
+    } catch (error) {
+      console.error('Error uploading hero image:', error);
+      alert('Failed to upload hero image. Please try again.');
+    } finally {
+      setIsUploading(false);
     }
-
-    // Clean up progress
-    setTimeout(() => {
-      setUploadProgress(prev => {
-        const newProgress = { ...prev };
-        delete newProgress[uploadId];
-        return newProgress;
-      });
-    }, 1000);
   }, [visualAssets, onChange]);
 
-  const handleDrop = useCallback((e: React.DragEvent, type: keyof VisualAssets) => {
+  const handleLogoUpload = useCallback(async (files: FileList) => {
+    const file = files[0];
+    if (!file || !file.type.startsWith('image/')) {
+      alert('Please upload only image files');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const response = await uploadAPI.uploadLogo(file);
+      const imageData = response.data.image;
+      
+      onChange({ 
+        ...visualAssets, 
+        logo: imageData.optimizedUrl 
+      });
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      alert('Failed to upload logo. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [visualAssets, onChange]);
+
+  const handleDrop = useCallback((e: React.DragEvent, type: 'hero' | 'logo') => {
     e.preventDefault();
     setDragOver(null);
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      handleFileUpload(files, type);
+      if (type === 'hero') {
+        handleHeroImageUpload(files);
+      } else {
+        handleLogoUpload(files);
+      }
     }
-  }, [handleFileUpload]);
+  }, [handleHeroImageUpload, handleLogoUpload]);
 
   const handleDragOver = useCallback((e: React.DragEvent, type: string) => {
     e.preventDefault();
@@ -71,12 +85,11 @@ const VisualAssetsStep: React.FC<VisualAssetsProps> = ({ visualAssets, onChange 
     setDragOver(null);
   }, []);
 
-  const removeImage = (type: keyof VisualAssets, index?: number) => {
-    if (type === 'heroBackground') {
+  const removeImage = (type: 'hero' | 'logo') => {
+    if (type === 'hero') {
       onChange({ ...visualAssets, heroBackground: '' });
-    } else if (type === 'productImages' && index !== undefined) {
-      const newImages = visualAssets.productImages.filter((_, i) => i !== index);
-      onChange({ ...visualAssets, productImages: newImages });
+    } else {
+      onChange({ ...visualAssets, logo: undefined });
     }
   };
 
@@ -85,18 +98,17 @@ const VisualAssetsStep: React.FC<VisualAssetsProps> = ({ visualAssets, onChange 
     title, 
     description, 
     required = false,
-    multiple = false,
-    currentFiles = []
+    currentFile = '',
+    onUpload
   }: {
-    type: keyof VisualAssets;
+    type: 'hero' | 'logo';
     title: string;
     description: string;
     required?: boolean;
-    multiple?: boolean;
-    currentFiles?: string[];
+    currentFile?: string;
+    onUpload: (files: FileList) => void;
   }) => {
-    const hasFiles = currentFiles.length > 0;
-    const isUploading = Object.keys(uploadProgress).some(key => key.startsWith(type));
+    const hasFile = !!currentFile;
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -108,22 +120,20 @@ const VisualAssetsStep: React.FC<VisualAssetsProps> = ({ visualAssets, onChange 
             </h3>
             <p className="text-gray-600 text-sm">{description}</p>
           </div>
-          {hasFiles && (
+          {hasFile && (
             <div className="flex items-center text-green-600">
               <CheckCircle className="w-5 h-5 mr-2" />
-              <span className="text-sm font-medium">
-                {currentFiles.length} {multiple ? 'files' : 'file'} uploaded
-              </span>
+              <span className="text-sm font-medium">Uploaded</span>
             </div>
           )}
         </div>
 
         {/* Upload Zone */}
         <div
-          className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+          className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 relative ${
             dragOver === type
               ? 'border-indigo-500 bg-indigo-50'
-              : hasFiles
+              : hasFile
               ? 'border-green-300 bg-green-50'
               : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
           }`}
@@ -134,24 +144,19 @@ const VisualAssetsStep: React.FC<VisualAssetsProps> = ({ visualAssets, onChange 
           {isUploading ? (
             <div className="space-y-4">
               <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto">
-                <Upload className="w-6 h-6 text-indigo-600 animate-bounce" />
+                <Loader className="w-6 h-6 text-indigo-600 animate-spin" />
               </div>
               <div>
-                <p className="text-gray-700 font-medium">Uploading...</p>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div 
-                    className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Object.values(uploadProgress)[0] || 0}%` }}
-                  />
-                </div>
+                <p className="text-gray-700 font-medium">Uploading to Cloudinary...</p>
+                <p className="text-gray-500 text-sm">Please wait while we process your image</p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto ${
-                hasFiles ? 'bg-green-100' : 'bg-gray-100'
+                hasFile ? 'bg-green-100' : 'bg-gray-100'
               }`}>
-                {hasFiles ? (
+                {hasFile ? (
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 ) : (
                   <Upload className="w-6 h-6 text-gray-400" />
@@ -159,53 +164,51 @@ const VisualAssetsStep: React.FC<VisualAssetsProps> = ({ visualAssets, onChange 
               </div>
               <div>
                 <p className="text-gray-700 font-medium">
-                  {hasFiles ? 'Upload additional files' : 'Drop your images here'}
+                  {hasFile ? 'Upload a new image' : 'Drop your image here'}
                 </p>
                 <p className="text-gray-500 text-sm">or click to browse</p>
+                <p className="text-gray-400 text-xs mt-1">
+                  Powered by Cloudinary - Automatic optimization included
+                </p>
               </div>
               <input
                 type="file"
                 accept="image/*"
-                multiple={multiple}
-                onChange={(e) => e.target.files && handleFileUpload(e.target.files, type)}
+                onChange={(e) => e.target.files && onUpload(e.target.files)}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
             </div>
           )}
         </div>
 
-        {/* Uploaded Files Preview */}
-        {currentFiles.length > 0 && (
+        {/* Current Image Preview */}
+        {hasFile && (
           <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Uploaded Files:</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {currentFiles.map((file, index) => (
-                <div key={index} className="relative group">
-                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                    <img
-                      src={file}
-                      alt={`Upload ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 flex space-x-2">
-                      <button
-                        onClick={() => setPreviewImage(file)}
-                        className="p-2 bg-white rounded-full text-gray-700 hover:text-indigo-600 transition-colors"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => removeImage(type, index)}
-                        className="p-2 bg-white rounded-full text-gray-700 hover:text-red-600 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Current Image:</h4>
+            <div className="relative group max-w-xs">
+              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                <img
+                  src={currentFile}
+                  alt={`${title} preview`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 flex space-x-2">
+                  <button
+                    onClick={() => setPreviewImage(currentFile)}
+                    className="p-2 bg-white rounded-full text-gray-700 hover:text-indigo-600 transition-colors"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => removeImage(type)}
+                    className="p-2 bg-white rounded-full text-gray-700 hover:text-red-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         )}
@@ -220,58 +223,31 @@ const VisualAssetsStep: React.FC<VisualAssetsProps> = ({ visualAssets, onChange 
           Upload Visual Assets
         </h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Upload your brand's visual assets to personalize your website. These images will be 
-          used throughout your site to create a unique and professional appearance.
+          Upload your brand's key visual assets. These images will be automatically optimized 
+          and used throughout your website to create a unique and professional appearance.
         </p>
       </div>
 
       <div className="space-y-8">
         {/* Hero Background */}
         <UploadZone
-          type="heroBackground"
+          type="hero"
           title="Hero Background Image"
           description="A high-quality image that will be the main background of your homepage hero section"
           required={true}
-          currentFiles={visualAssets.heroBackground ? [visualAssets.heroBackground] : []}
-        />
-
-        {/* Product Images */}
-        <UploadZone
-          type="productImages"
-          title="Product Images"
-          description="Upload images of your products or services. These will be used in product showcases and galleries"
-          required={true}
-          multiple={true}
-          currentFiles={visualAssets.productImages}
+          currentFile={visualAssets.heroBackground}
+          onUpload={handleHeroImageUpload}
         />
 
         {/* Logo Upload */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Company Logo</h3>
-              <p className="text-gray-600 text-sm">Upload your company logo (optional)</p>
-            </div>
-          </div>
-          
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-indigo-400 hover:bg-gray-50 transition-all duration-200">
-            <div className="space-y-4">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                <Image className="w-6 h-6 text-gray-400" />
-              </div>
-              <div>
-                <p className="text-gray-700 font-medium">Upload your logo</p>
-                <p className="text-gray-500 text-sm">PNG, JPG, or SVG format recommended</p>
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => e.target.files && handleFileUpload(e.target.files, 'heroBackground')}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-            </div>
-          </div>
-        </div>
+        <UploadZone
+          type="logo"
+          title="Company Logo"
+          description="Upload your company logo (optional) - will be automatically optimized for web use"
+          required={false}
+          currentFile={visualAssets.logo}
+          onUpload={handleLogoUpload}
+        />
       </div>
 
       {/* Requirements & Tips */}
@@ -279,14 +255,14 @@ const VisualAssetsStep: React.FC<VisualAssetsProps> = ({ visualAssets, onChange 
         <div className="flex items-start space-x-3">
           <AlertCircle className="w-6 h-6 text-blue-600 mt-0.5" />
           <div>
-            <h3 className="text-lg font-semibold text-blue-900 mb-2">Image Requirements & Tips</h3>
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">Cloudinary Integration Benefits</h3>
             <ul className="text-blue-800 space-y-2 text-sm">
-              <li>• <strong>Hero Background:</strong> Minimum 1920x1080px for best quality</li>
-              <li>• <strong>Product Images:</strong> Square format (1:1 ratio) works best</li>
-              <li>• <strong>File Size:</strong> Maximum 5MB per image</li>
-              <li>• <strong>Formats:</strong> JPG, PNG, WebP supported</li>
-              <li>• <strong>Quality:</strong> High-resolution images will look better on all devices</li>
-              <li>• <strong>Tip:</strong> Use images that reflect your brand's style and quality</li>
+              <li>• <strong>Automatic Optimization:</strong> Images are automatically compressed and optimized</li>
+              <li>• <strong>Multiple Formats:</strong> Served in the best format for each browser (WebP, AVIF, etc.)</li>
+              <li>• <strong>Responsive Images:</strong> Automatically resized for different screen sizes</li>
+              <li>• <strong>Fast Delivery:</strong> Global CDN ensures fast loading worldwide</li>
+              <li>• <strong>Hero Background:</strong> Recommended minimum 1920x1080px for best quality</li>
+              <li>• <strong>Logo:</strong> PNG format with transparent background works best</li>
             </ul>
           </div>
         </div>
@@ -312,16 +288,16 @@ const VisualAssetsStep: React.FC<VisualAssetsProps> = ({ visualAssets, onChange 
               )}
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-700">Product Images</span>
-              {visualAssets.productImages.length > 0 ? (
+              <span className="text-gray-700">Company Logo</span>
+              {visualAssets.logo ? (
                 <div className="flex items-center text-green-600">
                   <CheckCircle className="w-5 h-5 mr-2" />
-                  <span className="text-sm font-medium">{visualAssets.productImages.length} uploaded</span>
+                  <span className="text-sm font-medium">Uploaded</span>
                 </div>
               ) : (
-                <div className="flex items-center text-red-600">
+                <div className="flex items-center text-gray-400">
                   <AlertCircle className="w-5 h-5 mr-2" />
-                  <span className="text-sm font-medium">Required</span>
+                  <span className="text-sm font-medium">Optional</span>
                 </div>
               )}
             </div>

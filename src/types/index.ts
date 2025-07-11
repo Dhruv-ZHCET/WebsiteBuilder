@@ -16,8 +16,19 @@ export interface Product {
   price: number;
   sku: string;
   category: string;
-  image?: string;
+  images: CloudinaryImage[];
   inStock: boolean;
+}
+
+export interface CloudinaryImage {
+  publicId: string;
+  url: string;
+  optimizedUrl: string;
+  originalName: string;
+  size: number;
+  format: string;
+  width: number;
+  height: number;
 }
 
 export interface ColorTheme {
@@ -33,7 +44,6 @@ export interface ColorTheme {
 
 export interface VisualAssets {
   heroBackground: string;
-  productImages: string[];
   logo?: string;
   testimonialImages?: string[];
   galleryImages?: string[];

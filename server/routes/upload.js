@@ -1,63 +1,39 @@
 import express from 'express';
-import multer from 'multer';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { 
+  heroImageUpload, 
+  productImageUpload, 
+  logoUpload, 
+  deleteCloudinaryImage,
+  getOptimizedImageUrl 
+} from '../utils/cloudinaryConfig.js';
 
 const router = express.Router();
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880') // 5MB default
-  },
-  fileFilter: (req, file, cb) => {
-    // Allow only images
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
-
-// Upload single file
-router.post('/image', upload.single('image'), (req, res, next) => {
+// Upload hero background image
+router.post('/hero-image', heroImageUpload.single('heroImage'), (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({ error: 'No hero image uploaded' });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
-    
+    const optimizedUrl = getOptimizedImageUrl(req.file.filename, {
+      width: 1920,
+      height: 1080,
+      crop: 'fill',
+      gravity: 'center'
+    });
+
     res.json({
-      message: 'File uploaded successfully',
-      file: {
-        filename: req.file.filename,
+      message: 'Hero image uploaded successfully',
+      image: {
+        publicId: req.file.filename,
+        url: req.file.path,
+        optimizedUrl,
         originalName: req.file.originalname,
-        size: req.file.size,
-        url: fileUrl
+        size: req.file.bytes,
+        format: req.file.format,
+        width: req.file.width,
+        height: req.file.height
       }
     });
   } catch (error) {
@@ -65,41 +41,140 @@ router.post('/image', upload.single('image'), (req, res, next) => {
   }
 });
 
-// Upload multiple files
-router.post('/images', upload.array('images', 10), (req, res, next) => {
+// Upload product images (multiple)
+router.post('/product-images', productImageUpload.array('productImages', 10), (req, res, next) => {
   try {
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
+      return res.status(400).json({ error: 'No product images uploaded' });
     }
 
-    const files = req.files.map(file => ({
-      filename: file.filename,
-      originalName: file.originalname,
-      size: file.size,
-      url: `/uploads/${file.filename}`
-    }));
+    const images = req.files.map(file => {
+      const optimizedUrl = getOptimizedImageUrl(file.filename, {
+        width: 500,
+        height: 500,
+        crop: 'fill',
+        gravity: 'center'
+      });
+
+      return {
+        publicId: file.filename,
+        url: file.path,
+        optimizedUrl,
+        originalName: file.originalname,
+        size: file.bytes,
+        format: file.format,
+        width: file.width,
+        height: file.height
+      };
+    });
 
     res.json({
-      message: 'Files uploaded successfully',
-      files
+      message: 'Product images uploaded successfully',
+      images
     });
   } catch (error) {
     next(error);
   }
 });
 
-// Delete file
-router.delete('/:filename', (req, res, next) => {
+// Upload single product image
+router.post('/product-image', productImageUpload.single('productImage'), (req, res, next) => {
   try {
-    const filename = req.params.filename;
-    const filePath = path.join(uploadDir, filename);
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      res.json({ message: 'File deleted successfully' });
-    } else {
-      res.status(404).json({ error: 'File not found' });
+    if (!req.file) {
+      return res.status(400).json({ error: 'No product image uploaded' });
     }
+
+    const optimizedUrl = getOptimizedImageUrl(req.file.filename, {
+      width: 500,
+      height: 500,
+      crop: 'fill',
+      gravity: 'center'
+    });
+
+    res.json({
+      message: 'Product image uploaded successfully',
+      image: {
+        publicId: req.file.filename,
+        url: req.file.path,
+        optimizedUrl,
+        originalName: req.file.originalname,
+        size: req.file.bytes,
+        format: req.file.format,
+        width: req.file.width,
+        height: req.file.height
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Upload logo
+router.post('/logo', logoUpload.single('logo'), (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No logo uploaded' });
+    }
+
+    const optimizedUrl = getOptimizedImageUrl(req.file.filename, {
+      width: 300,
+      height: 300,
+      crop: 'fit',
+      background: 'transparent'
+    });
+
+    res.json({
+      message: 'Logo uploaded successfully',
+      image: {
+        publicId: req.file.filename,
+        url: req.file.path,
+        optimizedUrl,
+        originalName: req.file.originalname,
+        size: req.file.bytes,
+        format: req.file.format,
+        width: req.file.width,
+        height: file.height
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete image from Cloudinary
+router.delete('/:publicId', async (req, res, next) => {
+  try {
+    const { publicId } = req.params;
+    
+    // Extract the actual public ID from the full path if needed
+    const actualPublicId = publicId.includes('/') ? publicId : `websiteboss/${publicId}`;
+    
+    const result = await deleteCloudinaryImage(actualPublicId);
+    
+    if (result.result === 'ok') {
+      res.json({ message: 'Image deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Image not found or already deleted' });
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get optimized image URL
+router.get('/optimize/:publicId', (req, res, next) => {
+  try {
+    const { publicId } = req.params;
+    const { width, height, crop = 'fill', quality = 'auto' } = req.query;
+    
+    const optimizedUrl = getOptimizedImageUrl(publicId, {
+      width: width ? parseInt(width) : undefined,
+      height: height ? parseInt(height) : undefined,
+      crop,
+      quality
+    });
+    
+    res.json({ optimizedUrl });
   } catch (error) {
     next(error);
   }

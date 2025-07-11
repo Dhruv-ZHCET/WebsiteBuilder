@@ -46,4 +46,38 @@ export const websiteAPI = {
     }),
 };
 
+export const uploadAPI = {
+  uploadHeroImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('heroImage', file);
+    return api.post('/upload/hero-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  uploadProductImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('productImage', file);
+    return api.post('/upload/product-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  uploadProductImages: (files: File[]) => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('productImages', file));
+    return api.post('/upload/product-images', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  uploadLogo: (file: File) => {
+    const formData = new FormData();
+    formData.append('logo', file);
+    return api.post('/upload/logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  deleteImage: (publicId: string) => api.delete(`/upload/${publicId}`),
+  getOptimizedUrl: (publicId: string, options: any) => 
+    api.get(`/upload/optimize/${publicId}`, { params: options })
+};
+
 export default api;
