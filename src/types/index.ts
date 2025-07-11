@@ -47,6 +47,7 @@ export interface VisualAssets {
   logo?: string;
   testimonialImages?: string[];
   galleryImages?: string[];
+  productImages?: CloudinaryImage[];
 }
 
 export interface WebsiteTemplate {

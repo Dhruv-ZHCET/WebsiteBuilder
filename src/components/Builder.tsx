@@ -163,10 +163,13 @@ export default function Builder() {
       case 3:
         return websiteData.colorTheme.id !== "";
       case 4:
-        return websiteData.products.length > 0 && 
-               websiteData.products.every(product => product.images.length > 0);
+        return websiteData.products.length > 0;
       case 5:
-        return websiteData.content.heroTitle && websiteData.content.aboutTitle;
+        return websiteData.content.heroTitle && 
+               websiteData.content.aboutTitle && 
+               websiteData.content.aboutContent &&
+               websiteData.content.servicesTitle &&
+               websiteData.content.contactTitle;
       default:
         return true;
     }
@@ -205,8 +208,7 @@ export default function Builder() {
   };
 
   const generatePreviewHTML = (data: WebsiteData) => {
-    const { company, colorTheme, content, products, industry } = data;
-    // const { company, colorTheme, content, products, template } = data;
+    const { company, colorTheme, content, products, template } = data;
     
     return `
 <!DOCTYPE html>
@@ -504,6 +506,11 @@ export default function Builder() {
                 <div class="products-grid">
                     ${products.map(product => `
                         <div class="product-card">
+                            ${product.images.length > 0 ? `
+                                <div style="width: 100%; height: 200px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                                    <img src="${product.images[0].optimizedUrl || product.images[0].url}" alt="${product.name}" style="width: 100%; height: 100%; object-fit: cover;" />
+                                </div>
+                            ` : ''}
                             <div class="product-info">
                                 <h3>${product.name}</h3>
                                 <p>${product.description || ''}</p>
@@ -706,6 +713,13 @@ export default function Builder() {
                       </h4>
                       <p className="text-green-700 font-medium">{websiteData.company.name}</p>
                     </div>
+                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
+                      <h4 className="font-semibold text-indigo-900 mb-2 flex items-center">
+                        <span className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xs mr-2">P</span>
+                        Products
+                      </h4>
+                      <p className="text-indigo-700 font-medium">{websiteData.products.length} products added</p>
+                    </div>
                   </div>
                   <div className="space-y-4">
                     <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
@@ -714,8 +728,8 @@ export default function Builder() {
                         Visual Assets
                       </h4>
                       <p className="text-yellow-700 font-medium">
-                        {websiteData.visualAssets.heroBackground ? '✓' : '✗'} Hero Background, 
-                        {websiteData.visualAssets.productImages.length} Product Images
+                        {websiteData.visualAssets.heroBackground ? '✓' : '✗'} Hero Background
+                        {websiteData.visualAssets.logo ? ', ✓ Logo' : ''}
                       </p>
                     </div>
                     <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
@@ -724,6 +738,17 @@ export default function Builder() {
                         Color Theme
                       </h4>
                       <p className="text-purple-700 font-medium">{websiteData.colorTheme.name}</p>
+                    </div>
+                    <div className="p-4 bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl border border-pink-200">
+                      <h4 className="font-semibold text-pink-900 mb-2 flex items-center">
+                        <span className="w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center text-white text-xs mr-2">C</span>
+                        Content
+                      </h4>
+                      <p className="text-pink-700 font-medium">
+                        {websiteData.content.heroTitle ? '✓' : '✗'} Hero, 
+                        {websiteData.content.aboutContent ? '✓' : '✗'} About, 
+                        {websiteData.content.servicesTitle ? '✓' : '✗'} Services
+                      </p>
                     </div>
                   </div>
                 </div>

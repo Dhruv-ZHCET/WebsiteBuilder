@@ -57,6 +57,7 @@ const ContentCustomization: React.FC<ContentCustomizationProps> = ({ content, on
                 onChange={(e) => handleChange('heroTitle', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Welcome to Your Business"
+                required
               />
             </div>
             
@@ -98,6 +99,7 @@ const ContentCustomization: React.FC<ContentCustomizationProps> = ({ content, on
                 onChange={(e) => handleChange('aboutTitle', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="About Us"
+                required
               />
             </div>
             
@@ -111,6 +113,7 @@ const ContentCustomization: React.FC<ContentCustomizationProps> = ({ content, on
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Tell your story, your mission, and what makes you unique..."
+                required
               />
             </div>
           </div>
@@ -138,6 +141,7 @@ const ContentCustomization: React.FC<ContentCustomizationProps> = ({ content, on
               onChange={(e) => handleChange('servicesTitle', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Our Services"
+              required
             />
           </div>
         </div>
@@ -164,6 +168,7 @@ const ContentCustomization: React.FC<ContentCustomizationProps> = ({ content, on
               onChange={(e) => handleChange('contactTitle', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Contact Us"
+              required
             />
           </div>
         </div>
